@@ -1,12 +1,3 @@
-#************#
-#   DM MPR   #
-#************#
-
-# author: Peter Pin-Sung Liu
-# contact: psliu520@gmail.com
-# last edit: 2020.07.19
-
-
 ### setting ----
 
 # library
@@ -52,17 +43,20 @@ for (i in 1:length(dmpt_1)) {
   print(paste("complete", i))
 }
 head(dmpt_1[[1]])
-rm(dmpt_1a, dmpt_1b, i)
 
 # bind by row
 dmpt_1 <- rbindlist(dmpt_1)
-print(object.size (dmpt_1), units = "Mb")
+
+# write out
+write_fst(dmpt_1, "dmpt_1.fst")
+rm(dmpt_1a, dmpt_1b, df1, df2, i, dmpt_1)
 
 
 ### DM MPR ----
 
 # get max of fee_ym
-dmpt_2 <- dmpt_1[, .(drug_day_max = max(drug_day)), keyby = .(id, fee_ym)]
+dmpt_2 <- read_fst("dmpt_1.fst", as.data.table = T)
+dmpt_2 <- dmpt_2[, .(drug_day_max = max(drug_day)), keyby = .(id, fee_ym)]
 summary(dmpt_2$drug_day_max)
 
 # sum total dose of year
@@ -74,26 +68,32 @@ dmpt_2 <- dmpt_2[drug_day_sum >= 365, drug_day_sum := 365]
 summary(dmpt_2$drug_day_sum)
 
 # calculate MPR
-dmpt_2 <- dmpt_2[, mpr := drug_day_sum/365]
-dmpt_2 <- dmpt_2[, mpr80 := 0][mpr >= 0.8, mpr80 := 1]
+dmpt_2 <- dmpt_2[, mpr := drug_day_sum/365][, mpr80 := 0][mpr >= 0.8, mpr80 := 1]
 summary(dmpt_2$mpr)
 table(dmpt_2$mpr80)
+
+# write out
+write_fst(dmpt_2, "dmpt_2.fst")
+rm(dmpt_2, dmdrugs)
 
 
 ### baseline ----
 ins <- read_fst(paste0(fr, "h_nhi_enrol10301.fst"), as.data.table = T)
-dmpt_3 <- dmpt_2[ins[, .(id, id_s, id_birth_y)], on = .(id), nomatch = 0]
+dmpt_3 <- read_fst("dmpt_2.fst", as.data.table = T)
+dmpt_3 <- dmpt_3[ins[, .(id, id_s, id_birth_y)], on = .(id), nomatch = 0]
 dmpt_3 <- dmpt_3[, male := 0][id_s == "1", male := 1]
 dmpt_3 <- dmpt_3[, a65 := 0][2014 - as.numeric(id_birth_y) >= 65, a65 := 1]
-
 table(dmpt_3$mpr80, dmpt_3$male)
 table(dmpt_3$mpr80, dmpt_3$a65)
 
+# write out
+write_fst(dmpt_3, "dmpt_3.fst")
+rm(dmpt_3, ins)
 
 ### logistic reg ----
-model <- glm(mpr80 ~ male + a65, data = dmpt_3, family = binomial(link = "logit"))
+dmpt_final <- read_fst("dmpt_3.fst", as.data.table = T)
+model <- glm(mpr80 ~ male + a65, data = dmpt_final, family = binomial(link = "logit"))
 summary(model)
 exp(cbind(OR = coef(model), confint(model)))
 
-
-### END ###
+#END
