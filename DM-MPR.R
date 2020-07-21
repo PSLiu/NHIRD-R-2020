@@ -15,7 +15,7 @@ library(fst)
 library(readr)
 
 # project path
-fr <- "C:/Peter/Dropbox/Project/NHIRD/S10M/fst/"
+fr <- "C:/Peter/Dropbox/Project/NHIRD/SD1/fst/"
 
 # prepare ATC CODE & DRUG_NO
 dmdrugs <- read_csv("C:/Peter/Dropbox/Project/Resource/NHI-Drug-Atc-OrderCode/all_drug_no.csv")
@@ -56,6 +56,7 @@ rm(dmpt_1a, dmpt_1b, i)
 
 # bind by row
 dmpt_1 <- rbindlist(dmpt_1)
+print(object.size (dmpt_1), units = "Mb")
 
 
 ### DM MPR ----
