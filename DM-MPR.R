@@ -10,7 +10,8 @@ fr <- "C:/Peter/Dropbox/Project/NHIRD/SD1/fst/"
 
 # prepare ATC CODE & DRUG_NO
 dmdrugs <- read_csv("C:/Peter/Dropbox/Project/Resource/NHI-Drug-Atc-OrderCode/all_drug_no.csv")
-dmdrugs <- dmdrugs[grepl("^A10", dmdrugs$atc_code), c("drug_no")]
+dmdrugs <- as.data.table(dmdrugs)
+dmdrugs <- dmdrugs[grepl("^A10", dmdrugs$atc_code)]
 dmdrugs <- unique(dmdrugs$drug_no)
 
 
