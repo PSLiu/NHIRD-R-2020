@@ -83,10 +83,11 @@ a5 == 7
 a5 != 7
 a5 %in% c(4, 13)
 
-# 我們想把a5向量的每一個元素與7進行比較，看看"是否大於7"
+# 我們想知道a5向量當中哪一些元素大於7
 # 執行指令a5 > 7的結果為回傳一組邏輯值的向量，長度與a7相同
-# 將邏輯值套用在角括號[]當中
+# 將邏輯值放入角括號[]當中
 # 會將對應邏輯值為TRUE的元素保留
+
 a5
 a5 > 7
 a5[a5 > 7]
@@ -379,9 +380,14 @@ ggplot(data = opdte201401, aes(x = factor(id_s), y = drug_day)) +
 
 
 ### ~ data.table ~ ----
+library(data.table)
 
-# 使用read_fst()函數將獨入的資料轉成data.table
-opdte201401 <- read_fst("./fst/h_nhi_opdte10301_10.fst", as.data.table = T)
+DT <- data.table(
+  uid = c("A01", "A01", "A02", "A03", "A02", "A02"),
+  visit = c(1, 2, 1, 1, 2, 3),
+  sbp = c(118, 117, 116, 119, 120, 130),
+  dbp = c(85, 80, 92, 90, 92, 100)
+)
 
 
 
@@ -389,71 +395,82 @@ opdte201401 <- read_fst("./fst/h_nhi_opdte10301_10.fst", as.data.table = T)
 
 # 使用變項(column)的特性選擇觀察值(row)
 
-# 拿慢性處方箋的有幾人?
-chronic <- opdte201401[case_type == "08"]
-nrow(chronic)
+# 哪一些是首次看診紀錄
+DT[visit == 1]
 
-# 有多少糖尿病人(主診斷250)且給藥天數>0天
-dm <- opdte201401[icd9cm_1 == "250" & drug_day > 0]
-nrow(dm)
+# 哪一些是pre-HTN(sbp落在120-140中間)
+DT[sbp >= 120 & sbp <= 140]
 
-# 哪些人的用藥天數落在1-14天
-weekdrug.1 <- opdte201401[1 <= drug_day & drug_day <= 14]
-summary(weekdrug.1$drug_day)
-barplot(table(weekdrug.1$drug_day))
-
-# between函數將會包含上下界
-# 可以透過指定參數incbounds = F來修改
-weekdrug.2 <- opdte201401[between(drug_day, 1, 14)]
-summary(weekdrug.2$drug_day)
+# 資料排序
+DT[order(uid, -visit)]
 
 
 
 ### 4.2. j → 欄位(col) ----
 
-# 使用名稱來選擇需要的欄位
+# 選擇欄位
+DT[, .(uid, sbp, dbp)]
 
-# data.frame傳統作法
-icd <- opdte201401[, c("id", "icd9cm_1", "icd9cm_2", "icd9cm_3")] 
-str(icd)
+# 保留全部的欄位，並加上1個新建立的欄位
+DT[, `:=`(CaseGroup = 1)]
 
-# data.table現代做法
-icd <- opdte201401[, .(id, icd9cm_1, icd9cm_2, icd9cm_3)] 
-str(icd)
-
-# 先創造一個變項賦予起始值，再將符合條件的觀察值改變其變數內容
-# 大家都先有一個新的(:=)變項叫做dm，大家都是0
-# 如果有哪一些觀察值的icd9cm_1欄位是字串"250"
-# 那就把這一些觀察值的dm欄位修改為1
-icd.dm <- icd[, dm := 0][icd9cm_1 == "250", dm := 1]
-table(icd.dm$dm)
+# 保留想要的欄位，並加上2個新建立的欄位
+DT[, `:=`(gp = 1, gp2 = 0)] 
 
 
 
-### 4.3. by → 組別 ----
+### 4.3. i, j的綜合運用 ----
 
-# 分組摘要
 
-# 以性別為分組進行用藥天數的平均值計算
-opdte201401[, mean(drug_day), by = .(id_s)]
+# 先創造一個變項賦予起始值，再將符合條件的觀察值改變其內容
+# 大家都先有一個新的變項叫做pre_htn，大家都是0
+# 如果有哪一些觀察值的SBP大於120 mm-HG
+# 那就把這一些觀察值的pre_htn欄位修改為1
+DT[, `:=`(pre_htn = 0)][sbp >= 120, `:=`(pre_htn = 1)]
+table(DT$pre_htn)
 
-# 以性別為分組進行用藥天數的平均值計算，並將計算後的欄位命名為mean_drug_day
-opdte201401[, .(mean_drug_day = mean(drug_day)), by = .(id_s)]
+# 簡便寫法，但一次只能處理一個變項
+DT[, pre_htn := 0][sbp >= 120, pre_htn := 1]
+table(DT$pre_htn)
 
+
+### 4.4. by → 組別 ----
+
+# j, by的綜合運用
+
+# 進行分組運算，結果成為新的欄位，data.table不含原始欄位
+# 只有彙算結果
+DT.g1 <- DT[, .(mean_sbp = mean(sbp), mean_dbp = mean(dbp)), by = uid]
+print(DT.g1)
+
+# 進行分組運算，結果成為新的欄位，data.table包含原始欄位
+DT.g2 <- DT[, `:=`(mean_sbp = mean(sbp), mean_dbp = mean(dbp)), by = uid]
+print(DT.g2)
+
+# i, by的綜合運用
+# 資料排序後取每人第n筆
+DT[order(uid, visit)]
+
+DT[, .SD[1], by = uid]       # 群組內第1筆
+DT[, .SD[c(1:2)], by = uid]  # 群組內第1-2筆
+DT[, .SD[c(1, 3)], by = uid] # 群組內第1, 3筆
+DT[, .SD[3], by = uid]       # 群組內第3筆
+DT[, .SD[.N], by = uid]      # 群組內最後一筆
 
 
 ### 4.4. 連結資料表 join ----
-df1 <- data.table(uid = sample(LETTERS, 20), sbp = runif(20))
-df2 <- data.table(uid = sample(LETTERS, 20), dbp = runif(20))
+df1 <- data.table(uid = sample(LETTERS, 20), lab1 = runif(20))
+df2 <- data.table(uid = sample(LETTERS, 20), lab2 = runif(20))
 
 # 右連結 right join
-df3.r <- df1[df2, on = .(uid)]
+df1[df2, on = .(uid)]
+df1[df2, on = .(uid = uid)] # e.g. order_code = drug_no
 
 # 交集 inner join
-df3.i <- df1[df2, on = .(uid), nomatch = 0]
+df1[df2, on = .(uid), nomatch = 0]
 
 # 去除交集 anti join
-df3.a <- df1[!df2, on = .(uid)]
+df1[!df2, on = .(uid)]
 
 rm(list = ls())
 
@@ -492,7 +509,7 @@ df1[icd1 %in% c("433", "434")]
 
 df1[grepl("^433|^434", icd1)] # 433開頭或434開頭
 df1[grepl("^43[34]{1}", icd1)] # 43開頭，後面接1個3或4
-df1[grepl("^43[34]{1}[0-9]{1}", icd1)] # 433或434開頭，且有診斷碼第4位為任意數字
+df1[grepl("^43[34]{1}[0-9]{1}", icd1)] # 433或434開頭，且有診斷碼第4位為1個0-9的數字
 
 # hemorrhagic stroke
 df1[grepl("^43[0-2]{1}", icd1)] # 43開頭，後面接1個0, 1, 2
@@ -554,19 +571,19 @@ for (i in 1:30){
 # 7.0. 載入套件 ----
 library(fst)
 library(data.table)
+library(gmodels)
 
 
 
 # 7.1. 定義問題 ----
 
-# 有多少人在2014年的1月執行CPR心肺復甦術搶救?
-
-
+# 2014年1月有多少OHCA病患，並執行CPR心肺復甦術搶救?
 
 # 7.2. 撈取資料
 
-# 讀取2014年1月的西醫門診費用檔opdte(ppatients' id) → 病人資料
+# 讀取2014年1月的西醫門診費用檔opdte(patients' id) → 病人資料
 # 讀取2014年1月的西醫門診費用檔opdto(order code) → 醫令資料
+
 cd <- read_fst("./fst/h_nhi_opdte10301_10.fst", as.data.table = T)
 oo <- read_fst("./fst/h_nhi_opdto10301_10.fst", as.data.table = T)
 
@@ -577,25 +594,20 @@ op <- cd[oo, on = .(fee_ym, case_type, appl_type, appl_date, seq_no, hosp_id), n
 
 # 7.3. 資料整理 ----
 
-# 建立一個新的欄位cpr，其值為1
-# 找出符合CPR醫令碼(47029C)的觀察值
-# 並保留身分證號(id)，就醫日期(func_date)，CPR共3個欄位
-op1 <- op[, cpr := 0][drug_no == "47029C", cpr := 1][, .(id, func_date, cpr)]
-table(op1$cpr)
+# 建立OHCA(ICD-9-CM:798.xx)和CPR(醫令47029C)欄位
+op1 <- op[, `:=`(OHCA = 0)][(grepl("^798", icd9cm_1)|grepl("^798", icd9cm_2)|grepl("^798", icd9cm_3)), `:=`(OHCA = 1)]
+op1 <- op[, `:=`(CPR = 0)][drug_no == "47029C", `:=`(CPR = 1)]
+
+table(op1$OHCA)
+table(op1$CPR)
 
 # 整合成看診人次資料
-op2 <- op1[, .(cpr_1 = max(cpr)), by = .(id, func_date)]
-
-# 整合成歸人資料
-op3 <- op2[, .(cpr_2 = max(cpr_1)), by = .(id)]
-
+op2 <- op1[, .(OHCA = max(OHCA), CPR = max(CPR)), by = .(id, func_date, hosp_id)]
 
 
 # 7.4. 資料分析 ----
-table(op2$cpr)
-table(op3$cpr)
-
-
+CrossTable(op2$CPR, op2$OHCA)
+CrossTable(op2$CPR, op2$OHCA, prop.r = F, prop.t = F, prop.chisq = F)
 
 
 
