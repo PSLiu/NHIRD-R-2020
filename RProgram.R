@@ -587,6 +587,13 @@ library(gmodels)
 cd <- read_fst("./fst/h_nhi_opdte10301_10.fst", as.data.table = T)
 oo <- read_fst("./fst/h_nhi_opdto10301_10.fst", as.data.table = T)
 
+# 檔案   fst大小(mb)   讀進記憶體大小(mb)
+# cd     7.5           56
+# oo     11.8          123
+format(object.size(cd), "Mb")
+format(object.size(oo), "Mb")
+
+
 # 合併兩者
 op <- cd[oo, on = .(fee_ym, case_type, appl_type, appl_date, seq_no, hosp_id), nomatch = 0]
 

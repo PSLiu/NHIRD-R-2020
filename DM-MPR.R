@@ -1,5 +1,11 @@
 ### 工作環境配置 ----
 
+# install
+need <- c("data.table", "fst", "readr", "fastDummies", "gmodels", "pROC", "ggplot2")
+for (i in 1:length(need)) {
+  install.packages(need[i])
+}
+
 # library
 library(data.table)
 library(fst)
@@ -209,7 +215,7 @@ summary(dm04_2$drug_day)
 # 排除補報的
 dm04_3 <- dm04_2[appl_type != "2"]
 
-# 將連續進行處方歸納
+# 依據病人ID, 醫院ID, 就診日期, 處方醫師，將連續進行處方歸納
 dm04_4 <- dm04_3[, .(drug_day = sum(drug_day)), keyby = .(id, hosp_id, func_date, prsn_id)]
 summary(dm04_4$drug_day)
 
@@ -222,7 +228,7 @@ hist(dm04_5$drug_day)
 dm04_6 <- dm04_5[, `:=`(mpr = drug_day / (365 - 31))][mpr > 1, `:=`(mpr = 1)]
 summary(dm04_6$mpr)
 
-# 將MPR大於等於90的變成一個變項
+# 先建立(更新)一個變項叫做mpr90，預設值為0，若MPR大於等於90的則更新mpr90為1
 dm04_7 <- dm04_6[, `:=`(mpr90 = 0)][mpr >= 0.9, `:=`(mpr90 = 1)]
 table(dm04_7$mpr90)
 
