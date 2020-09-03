@@ -113,20 +113,10 @@ df1 <- data.frame(
 )
 class(df1)
 
-# 選擇觀察值(列/row)
-df1[1, ]
-df1[1:2, ]
-df1[c(1, 3), ]
-df1[df1$UID == "A01", ]
-df1[df1$UID %in% c("A01", "A03"), ]
+# 選擇觀察值(列/row)，放在角括號內逗點的左邊
 df1[df1$sbp > 120, ]
 
-# 選擇變項(欄/column)
-df1[, 1]
-df1[, 1:2]
-df1[, c(1, 3)]
-df1$UID
-df1[, "UID"]
+# 選擇變項(欄/column)，放在角括號內逗點的右邊
 df1[, c("UID", "sbp")]
 
 # 下一章節的data.table將會給你一個更快速的操作方法！
@@ -170,10 +160,14 @@ rm(a1)
 rm(df1, l1)
 
 # 若要移除特定模式，例如說名稱為a開頭的物件
-# 使用ls()函數產生一個清單
-# 內容為environment當中名稱開頭為"a"的物件名稱
+# 使用ls()函數產生一個物件名為drop
+# 內容為environment當中名稱開頭為"a"的物件名稱所構成的向量
 # 將此一清單作為rm()函數中list引數的參數
-rm(list = ls(pattern = "^a"))
+drop <- ls(pattern = "^a")
+rm(list = drop)
+
+# 函數包函數的簡潔寫法
+rm(list = ls(pattern = "^b"))
 
 # pattern當中的"^a"是正規表達式(regular expression)
 # 將會在後續章節介紹
@@ -182,22 +176,8 @@ rm(list = ls(pattern = "^a"))
 rm(list = ls())
 
 # list.files可以列出資料夾中檔案的清單
-# 目前的工作資料夾，也是R script開啟時的資料夾
-list.files()
-
-# 也可以列出其他資料夾
-# 同一工作資料夾中名為fst的子資料夾
-# 注意R的路徑間格為/，不是Windows的\
-list.files(path = "./fst") 
-
-# 此範例想要找死因檔
-# 其檔名會以"h_ost"作為開頭
-list.files(path = "./fst", pattern = "^h_ost")
-
-# 可以列出指定模式(pattern)的檔案名稱
-# 此範例想要找出R script檔案
-# 其檔名會以".R"作為結尾
-list.files(pattern = ".R$")
+# 注意R的路徑間格為/，不是Windows的\，需要手動修改
+list.files(path = "C:/Peter/Dropbox/Teaching/R-NHIRD(2020)") 
 
 # 請鎖定下午場的超實用regular expression講解！
 
@@ -308,21 +288,23 @@ runif(n = 30, min = 15, max = 50)
 rnorm(n = 30)
 rnorm(n = 30, mean = 5, sd = 1.23)
 
-# length：回傳向量長度
-length(runif(30))
-
 
 
 
 
 ### ~ 實用套件 packages ~ ----
 
+
+
+### 3.0. 下載套件 ----
+
 # 下載套件，許多好用的套件都不是R安裝時內建
 install.packages("readr") # 匯入Excel檔案
 install.packages("fst") # fst檔案
+install.packages("ggplot2") # 繪圖套件
+install.packages("gmodels") # 快速產生虛擬變項
+install.packages("fastDummies") # 快速產生虛擬變項
 install.packages("data.table") # data.frame的進階版，實用資料處理方法
-install.packages("ggplot") # 繪圖套件
-
 
 
 ### 3.1. readr ----
@@ -330,45 +312,26 @@ install.packages("ggplot") # 繪圖套件
 # library
 library(readr)
 
-# read in
-drug <- read_csv("all_drug_no.csv")
+# read_csv
+drug <- read_csv("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/all_drug_no.csv")
 str(drug)
-dim(drug)
-
-rm(drug)
 
 
 
 ### 3.2. fst ----
 
-# read_fst
-
 # library
 library(fst)
 
-# read in
-opdte201401 <- read_fst("./fst/h_nhi_opdte10301_10.fst")
+# read_fst
+opdte201401 <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10301_10.fst")
 str(opdte201401)
 head(opdte201401)
 head(opdte201401, 10)
-tail(opdte201401)
 
 
 
-### 3.3. data.table ----
-
-# library
-library(data.table)
-
-# as.data.table
-opdte201401 <- read_fst("./fst/h_nhi_opdte10301_10.fst")
-class(opdte201401)
-opdte201401 <- as.data.table(opdte201401)
-class(opdte201401)
-
-
-
-### 3.4. ggplot2 ----
+### 3.3. ggplot2 ----
 
 # library
 library(ggplot2)
@@ -376,6 +339,31 @@ library(ggplot2)
 # ggplot
 ggplot(data = opdte201401, aes(x = factor(id_s), y = drug_day)) + 
   stat_summary(fun = "mean", geom = "bar")
+
+
+
+### 3.4. gmodels ----
+
+# library
+library(gmodels)
+CrossTable(opdte201401$id_s, opdte201401$appl_type)
+CrossTable(opdte201401$id_s, opdte201401$appl_typ, prop.r = T, prop.c = F, prop.t = F, prop.chisq = F)
+
+
+
+### 3.5. fastDummies ----
+
+# library
+library(fastDummies)
+
+opdte201401_dummy <- dummy_cols(opdte201401, select_columns = c("id_s"))
+
+table(opdte201401_dummy$id_s)
+table(opdte201401_dummy$id_s_1)
+table(opdte201401_dummy$id_s_2)
+table(opdte201401_dummy$id_s_9)
+
+
 
 
 
@@ -452,9 +440,8 @@ print(DT.g2)
 DT[order(uid, visit)]
 
 DT[, .SD[1], by = uid]       # 群組內第1筆
-DT[, .SD[c(1:2)], by = uid]  # 群組內第1-2筆
+DT[, .SD[c(1:3)], by = uid]  # 群組內第1-3筆
 DT[, .SD[c(1, 3)], by = uid] # 群組內第1, 3筆
-DT[, .SD[3], by = uid]       # 群組內第3筆
 DT[, .SD[.N], by = uid]      # 群組內最後一筆
 
 
@@ -485,15 +472,15 @@ df1 <- data.table(
   UID = c("A01", "A01", "B05", "C02", "B04", "A09", "A08", "A08", "A08", "C01"),
   icd1 = c("250", "25010", "1250", "430", "431", "432", "433", "4332", "434", "436")
 )
+View(df1)
 
 ### 5.1. 模式 pattern ----
 
-# 使用grepl判斷df1資料表中UID字串是否以A開頭，並回傳T/F
+# 使用grepl判斷df1資料表中UID字串是否以A開頭，並產生T/F
 # 將T/F值放入data.table的i位置，將T的列留下
 df1[grepl("^A", UID)]
 
 # 使用grepl判斷df1資料表中UID字串是否以01結果，回傳資料列
-df1[grepl("A01", UID)]
 df1[grepl("01$", UID)]
 
 # 辨識ICD Codes
@@ -506,16 +493,12 @@ df1[grepl("^250", icd1)] # 應該使用250「開頭」才對
 
 # Ischemic stroke：ICD-9-CM為433.xx, 434.xx 
 df1[icd1 %in% c("433", "434")]
-
-df1[grepl("^433|^434", icd1)] # 433開頭或434開頭
-df1[grepl("^43[34]{1}", icd1)] # 43開頭，後面接1個3或4
-df1[grepl("^43[34]{1}[0-9]{1}", icd1)] # 433或434開頭，且有診斷碼第4位為1個0-9的數字
-
-# hemorrhagic stroke
-df1[grepl("^43[0-2]{1}", icd1)] # 43開頭，後面接1個0, 1, 2
+df1[grepl("^433|^434", icd1)] # 433開頭或434開頭，這樣可以考量有次診斷資料
+df1[grepl("^43[34]", icd1)] # 43開頭，後面接3或4的數字
 
 # overall stroke, 430, 431, 432, 433, 434, 435, 436, 437, 438
-df1[grepl("^43[0-8]{1}", icd1)] # 43開頭，後面接1個0-8
+df1[grepl("^43[0-8]", icd1)] # 43開頭，後面接0-8的數字
+
 
 # useful reference
 
@@ -563,58 +546,6 @@ for (i in 1:30){
 }
 
 
-
-
-
-### ~ NHIRD use R ~ ----
-
-# 7.0. 載入套件 ----
-library(fst)
-library(data.table)
-library(gmodels)
-
-
-
-# 7.1. 定義問題 ----
-
-# 2014年1月有多少OHCA病患，並執行CPR心肺復甦術搶救?
-
-# 7.2. 撈取資料
-
-# 讀取2014年1月的西醫門診費用檔opdte(patients' id) → 病人資料
-# 讀取2014年1月的西醫門診費用檔opdto(order code) → 醫令資料
-
-cd <- read_fst("./fst/h_nhi_opdte10301_10.fst", as.data.table = T)
-oo <- read_fst("./fst/h_nhi_opdto10301_10.fst", as.data.table = T)
-
-# 檔案   fst大小(mb)   讀進記憶體大小(mb)
-# cd     7.5           56
-# oo     11.8          123
-format(object.size(cd), "Mb")
-format(object.size(oo), "Mb")
-
-
-# 合併兩者
-op <- cd[oo, on = .(fee_ym, case_type, appl_type, appl_date, seq_no, hosp_id), nomatch = 0]
-
-
-
-# 7.3. 資料整理 ----
-
-# 建立OHCA(ICD-9-CM:798.xx)和CPR(醫令47029C)欄位
-op1 <- op[, `:=`(OHCA = 0)][(grepl("^798", icd9cm_1)|grepl("^798", icd9cm_2)|grepl("^798", icd9cm_3)), `:=`(OHCA = 1)]
-op1 <- op[, `:=`(CPR = 0)][drug_no == "47029C", `:=`(CPR = 1)]
-
-table(op1$OHCA)
-table(op1$CPR)
-
-# 整合成看診人次資料
-op2 <- op1[, .(OHCA = max(OHCA), CPR = max(CPR)), by = .(id, func_date, hosp_id)]
-
-
-# 7.4. 資料分析 ----
-CrossTable(op2$CPR, op2$OHCA)
-CrossTable(op2$CPR, op2$OHCA, prop.r = F, prop.t = F, prop.chisq = F)
 
 
 
