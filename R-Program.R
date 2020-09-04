@@ -266,7 +266,7 @@ rm(e2)
 
 # 抽樣：sample
 
-# LETTERS是R內建的物件，包含A-Z的大寫字母
+# LETTERS是R內建的物件，包含A-Z的大寫字母的文字向量
 # sample()函數當中
 # x是抽樣的樣本空間
 # size是抽樣的數量
@@ -279,6 +279,10 @@ sample(x = LETTERS, size = 10)
 sample(LETTERS, 50, replace = T)
 sample(c("Trump", "Winnie", "Kim"), 10, replace = T)
 sample(1:3, 10, replace = T)
+
+# 隨機分派
+gp <- sample(c("Placebo", "Tx01", "Tx02"), 500, replace = T, prob = c(1/3, 1/3, 1/3))
+table(gp)
 
 # 隨機均等分布
 runif(n = 30)
@@ -429,11 +433,11 @@ table(DT$pre_htn)
 # 進行分組運算，結果成為新的欄位，data.table不含原始欄位
 # 只有彙算結果
 DT.g1 <- DT[, .(mean_sbp = mean(sbp), mean_dbp = mean(dbp)), by = uid]
-print(DT.g1)
+DT.g1
 
 # 進行分組運算，結果成為新的欄位，data.table包含原始欄位
 DT.g2 <- DT[, `:=`(mean_sbp = mean(sbp), mean_dbp = mean(dbp)), by = uid]
-print(DT.g2)
+DT.g2
 
 # i, by的綜合運用
 # 資料排序後取每人第n筆

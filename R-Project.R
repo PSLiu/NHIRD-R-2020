@@ -1,6 +1,6 @@
 ### ~ OHCA & CPR ~ ----
 
-### 問題：今年2月有多少OHCA患者?其中多少人施行了心肺復甦術(CPR)?
+### 問題：今年1月有多少OHCA患者?其中多少人施行了心肺復甦術(CPR)?
 
 ### library
 library(fst)
@@ -11,16 +11,10 @@ library(gmodels)
 
 ### 1.讀取資料 ----
 
-# 讀取2014年2月的西醫門診費用檔opdte(patients' id) → 病人資料
-# 讀取2014年2月的西醫門診費用檔opdto(order code) → 醫令資料
-ohca_1a <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10302_10.fst", as.data.table = T)
-ohca_1b <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdto10302_10.fst", as.data.table = T)
-
-# 檔案   fst大小(mb)  讀進記憶體大小(mb)
-# cd     6            46
-# oo     10           10
-format(object.size(ohca_1a), "Mb")
-format(object.size(ohca_1b), "Mb")
+# 讀取2014年1月的西醫門診費用檔opdte(patients' id) → 病人資料
+# 讀取2014年1月的西醫門診費用檔opdto(order code) → 醫令資料
+ohca_1a <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10301_10.fst", as.data.table = T)
+ohca_1b <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdto10301_10.fst", as.data.table = T)
 
 # 合併兩者
 ohca_2 <- ohca_1a[ohca_1b, on = .(fee_ym, case_type, appl_type, appl_date, seq_no, hosp_id), nomatch = 0]
@@ -65,8 +59,13 @@ library(data.table)
 ### 1.讀取資料 ----
 
 # 讀入fst
-sk_1a <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10303_10.fst", as.data.table = T)
-sk_1b <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10304_10.fst", as.data.table = T)
+sk_1a <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10302_10.fst", as.data.table = T)
+sk_1b <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10303_10.fst", as.data.table = T)
+
+format(object.size(sk_1a), "Mb")
+# 檔案   fst大小(MB)  讀進記憶體大小(MB)
+# sk_1a  6.3          46.4
+# fst只是在儲存時進行壓縮，讀入R之後會解壓縮回原本的大小
 
 
 
@@ -91,9 +90,15 @@ sk_5 <- sk_4a[sk_4b, on = .(id), nomatch = 0]
 
 ### 3.後續延伸 ----
 
-# 參考承保檔瞭解病人特性
+# 連結承保檔瞭解病人特性
 sk_5_ins <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_enrol10301.fst", as.data.table = T)
-sk_5_ins <- sk_5_ins[sk_5, on = .(id), nomatch = 0]
+sk_6 <- sk_5_ins[sk_5, on = .(id), nomatch = 0]
+
+# 建立其他有興趣的變項
+sk_7 <- sk_6[, age := 2014 - as.numeric(sk_6$id_birth_y)]
+
+# 檢視
+sk_7[, .(id, id_s, age)]
 
 # clear
 rm(list = ls())
@@ -102,7 +107,7 @@ rm(list = ls())
 
 
 
-### ~ 各地感冒發生率 ~ ----
+### ~ 各地感冒盛行率 ~ ----
 
 ### 問題：台灣民眾感冒就診人次，在各地是否有差異?
 
@@ -114,8 +119,8 @@ library(data.table)
 
 ### 1.感冒就診 ----
 
-# 匯入1月份的門診費用檔
-cold_1 <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10301_10.fst", as.data.table = T)
+# 匯入4月份的門診費用檔
+cold_1 <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_opdte10304_10.fst", as.data.table = T)
 
 # 保留需要使用的欄位
 cold_2 <- cold_1[, .(id, func_date, hosp_id, city, icd9cm_1, icd9cm_2, icd9cm_3)]
@@ -144,68 +149,60 @@ ins_1 <- read_fst("C:/Peter/Dropbox/Teaching/R-NHIRD(2020)/fst/h_nhi_enrol10301.
 # 歸人，看每個地區分別有幾個人
 ins_2 <- ins_1[, .(per_sum = .N), by = .(id1_city)]
 
+# 此一方式僅供課堂演練參考，因為投保地未必與居住地相等
+
 
 
 ### 3.合併資料 ----
 
-# 將地區別感冒紀錄和地區別投保人口數取交集，並且計算每100人月的感冒發生率
+# 將地區別感冒紀錄和地區別投保人口數取交集，並且計算感冒盛行率(百分之幾)
 fdt_1 <- cold_6[ins_2, on = .(city = id1_city), nomatch = 0]
-fdt_2 <- fdt_1[, cold_incidence := ((cold_sum / per_sum) * 100)]
-summary(fdt_2$cold_incidence)
+fdt_2 <- fdt_1[, cold_prevalence := ((cold_sum / per_sum) * 100)]
+summary(fdt_2$cold_prevalence)
+
+# 盛行率應當不會 > 100%，應該是許多人投保/依附納保地點被錯誤歸類
+# 設定50%為切點，僅保留盛行率小於50%的為可信資料，進行後續分析
+fdt_3 <- fdt_2[cold_prevalence < 50]
 
 # 加上健保六分區的欄位 ~ 傳統寫法
-fdt_3 <- fdt_2[, nhi_adm := 0]
-fdt_3 <- fdt_3[grepl("^01|^31|^11|^34|^90|^91", city), nhi_adm := 1] # 台北業務組
-fdt_3 <- fdt_3[grepl("^32|^12|^33|^35", city), nhi_adm := 2]         # 北區業務組
-fdt_3 <- fdt_3[grepl("^03|^38|^37", city), nhi_adm := 3]             # 中區業務組
-fdt_3 <- fdt_3[grepl("^39|^22|^40|^05", city), nhi_adm := 4]         # 南區業務組
-fdt_3 <- fdt_3[grepl("^07|^43|^44", city), nhi_adm := 5]             # 高屏業務組
-fdt_3 <- fdt_3[grepl("^46|^45", city), nhi_adm := 6]                 # 東區業務組
-
-# 加上健保六分區的欄位 - 變形寫法
-fdt_3 <- fdt_2[, nhi_adm := 0][
-  # 台北業務組
-  grepl("^01|^31|^11|^34|^90|^91", city), nhi_adm := 1][
-    # 北區業務組
-    grepl("^32|^12|^33|^35", city), nhi_adm := 2][
-      # 中區業務組
-      grepl("^03|^38|^37", city), nhi_adm := 3][
-        # 南區業務組
-        grepl("^39|^22|^40|^05", city), nhi_adm := 4][
-          # 高屏業務組
-          grepl("^07|^43|^44", city), nhi_adm := 5][
-            # 東區業務組
-            grepl("^46|^45", city), nhi_adm := 6]                 
+fdt_4 <- fdt_3[, nhi_adm := 0]
+fdt_4 <- fdt_4[grepl("^01|^31|^11|^34|^90|^91", city), nhi_adm := 1] # 台北業務組
+fdt_4 <- fdt_4[grepl("^32|^12|^33|^35", city), nhi_adm := 2]         # 北區業務組
+fdt_4 <- fdt_4[grepl("^03|^38|^37", city), nhi_adm := 3]             # 中區業務組
+fdt_4 <- fdt_4[grepl("^39|^22|^40|^05", city), nhi_adm := 4]         # 南區業務組
+fdt_4 <- fdt_4[grepl("^07|^43|^44", city), nhi_adm := 5]             # 高屏業務組
+fdt_4 <- fdt_4[grepl("^46|^45", city), nhi_adm := 6]                 # 東區業務組
 
 # 給定層級和標籤
-fdt_3$nhi_adm <- factor(fdt_3$nhi_adm, 
+table(fdt_4$nhi_adm)
+fdt_4$nhi_adm <- factor(fdt_4$nhi_adm, 
                         levels = c(1, 2, 3, 4, 5, 6),
                         labels = c("台北", "北區", "中區", "南區", "高屏", "東區"))
 
 # 確認分區結果不能有遺漏或錯誤
-table(fdt_3$nhi_adm)
+table(fdt_4$nhi_adm)
 
 
 
 ### 4.結果分析 ----
 
-# 計算各分區感冒人數的發生率平均值、標準差
-fdt_3[, 
+# 計算各分區感冒人數的盛行率平均值、標準差
+fdt_4[, 
       .(NumCity = .N, 
-        cold_incidence_mean = mean(cold_incidence), 
-        cold_incidence_sd = sd(cold_incidence)), 
+        cold_prevalence_mean = mean(cold_prevalence), 
+        cold_prevalence_sd = sd(cold_prevalence)), 
       keyby = .(nhi_adm)]
 
 # ANOVA
-report <- aov(cold_incidence ~ nhi_adm, fdt_3)
+report <- aov(cold_prevalence ~ nhi_adm, fdt_4)
 summary(report)
 
 # 繪圖
-boxplot(cold_incidence ~ nhi_adm, 
-        data = fdt_3,
-        main = "1月各地平均感冒發生率",
+boxplot(cold_prevalence ~ nhi_adm, 
+        data = fdt_4,
+        main = "4月各地感冒盛行率分布狀況",
         xlab = "健保署業務組", 
-        ylab = "感冒發生率(每100人月)")
+        ylab = "感冒盛行率(%)")
 
 # clear
 rm(list = ls())
