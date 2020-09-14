@@ -30,9 +30,9 @@ class(a4)
 # 使用索引(index)回傳向量當中的元素
 # 起始的索引值為1，不同於python為0
 a4[1]
-a4[2:3]
 a4[c(2:3)]
 a4[c(2, 5)]
+a4[c(2:3, 8)]
 
 # 向量的運算及操作會應用到向量中的每一個元素
 # 運算符號：加法 +, 減法 -, 乘法 *, 除法 /, 餘數 %%
@@ -53,6 +53,9 @@ class(b1)
 b2 <- c("Peter", "Jonny", "Kay")
 b2
 class(b2)
+
+length(b2)   # 物件長度
+nchar(b2)    # 物件中的字串長度
 
 
 
@@ -130,7 +133,7 @@ l1 <- list(x1 = c(1:10),  x2 = "Peter", x3 = df1)
 l1
 
 # 讓我們來看看清單當中的不同元素
-# 清單[[清單內條件]][物件內條件]
+# 清單名稱[[清單內物件名稱/索引]][物件內條件]
 l1[[1]]
 l1[["x1"]]
 l1[[2]]
@@ -144,7 +147,7 @@ l1[[3]][1]
 ### ~ 基本函數 ~ ----
 
 # 如何瞭解函數的使用
-?list.files
+?sample
 
 ### 2.1. 作業環境  ----
 
@@ -224,27 +227,33 @@ print(e1.2)
 e1.3 <- paste0("gen", e1)
 print(e1.3)
 
+# clear
+rm(list = ls(pattern = "^e1"))
+
 
 
 # 找尋文字：grep & grepl
 
+# 飛機航班編號
+flight <- c("AC-18", "TR-874", "TR-899", "TG-5871", "BI-452", "CI-9504", "BR-102", "NH-5848", "NZ-4902", "TK-9452", "TG-6282", "BR-158", "TG-6376", "TK-9470", "NH-5820", "NZ-4920")
+
 # 從e1物件中找尋包含"A"的元素
 # 並回傳其位置(index)
-e1.4 <- grep("A", e1)
-print(e1.4)
+flight.1 <- grep("BR", flight)
+print(flight.1)
 
 # 從e1物件中找尋包含"A"的元素
 # 並回傳其符合條件的值(value)
-e1.5 <- grep("A", e1, value = T)
-print(e1.5)
+flight.2 <- grep("BR", flight, value = T)
+print(flight.2)
 
 # 從e1物件中找尋包含"A"的元素
 # 並回傳其邏輯值(logical)
 # 值的個數會等於原始向量的長度(元素數量)
-e1.6 <- grepl("A", e1)
-print(e1.6)
+flight.3 <- grepl("BR", flight)
+print(flight.3)
 
-rm(list = ls(pattern = "^e1"))
+rm(list = ls(pattern = "^flight"))
 
 
 
@@ -253,12 +262,14 @@ rm(list = ls(pattern = "^e1"))
 e2 <- c("TCGATT", "ATATG")
 
 # 將各別元素內符合模式(pattern)的「第一個字串」取代為新的字串
-sub(pattern = "T", replacement = "U", e2) 
+e2.1 <- sub(pattern = "T", replacement = "U", e2) 
+print(e2.1)
 
 # 將各別元素內符合模式(pattern)的「所有字串」取代為新的字串
-gsub(pattern = "T", replacement = "U", e2)
+e2.2 <- gsub(pattern = "T", replacement = "U", e2)
+print(e2.2)
 
-rm(e2)
+rm(list = ls(pattern = "^e2"))
 
 
 
@@ -272,7 +283,8 @@ rm(e2)
 # size是抽樣的數量
 # 預設是抽出「不放回」
 LETTERS
-sample(x = LETTERS, size = 10)
+s.1a <- sample(x = LETTERS, size = 10)
+print(s.1a)
 
 # 當抽樣以抽出放回的方式進行，replace = TRUE
 # 當size大於x的時候必須要指定
@@ -281,16 +293,23 @@ sample(c("Trump", "Winnie", "Kim"), 10, replace = T)
 sample(1:3, 10, replace = T)
 
 # 隨機分派
-gp <- sample(c("Placebo", "Tx01", "Tx02"), 500, replace = T, prob = c(1/3, 1/3, 1/3))
+gp <- sample(c("Placebo", "Tx01", "Tx02"), 30000, replace = T, prob = c(1/3, 1/3, 1/3))
 table(gp)
 
 # 隨機均等分布
-runif(n = 30)
-runif(n = 30, min = 15, max = 50)
+r.1a <- runif(n = 300)
+hist(r.1a)
+r.1b <- runif(n = 300, min = 15, max = 50)
+hist(r.1b)
 
 # 隨機常態分布
-rnorm(n = 30)
-rnorm(n = 30, mean = 5, sd = 1.23)
+r.2a <- rnorm(n = 300)
+hist(r.2a)
+r.2b <- rnorm(n = 300, mean = 5, sd = 1.23)
+hist(r.2a)
+
+# clear
+rm(list = ls())
 
 
 
@@ -363,9 +382,12 @@ library(fastDummies)
 opdte201401_dummy <- dummy_cols(opdte201401, select_columns = c("id_s"))
 
 table(opdte201401_dummy$id_s)
-table(opdte201401_dummy$id_s_1)
-table(opdte201401_dummy$id_s_2)
-table(opdte201401_dummy$id_s_9)
+CrossTable(opdte201401_dummy$id_s, opdte201401_dummy$id_s_1, prop.r = F, prop.c = F, prop.t = F, prop.chisq = F)
+CrossTable(opdte201401_dummy$id_s, opdte201401_dummy$id_s_2, prop.r = F, prop.c = F, prop.t = F, prop.chisq = F)
+CrossTable(opdte201401_dummy$id_s, opdte201401_dummy$id_s_9, prop.r = F, prop.c = F, prop.t = F, prop.chisq = F)
+
+# clear
+rm(list = ls())
 
 
 
