@@ -72,12 +72,12 @@ format(object.size(sk_1a), "Mb")
 ### 2.整理資料 ----
 
 # 中風
-sk_2a <- sk_1a[(grepl("^43[0-8]", icd9cm_1)|grepl("^43[0-8]", icd9cm_2)|grepl("^43[0-8]", icd9cm_3))]
-sk_2b <- sk_1b[(grepl("^43[0-8]", icd9cm_1)|grepl("^43[0-8]", icd9cm_2)|grepl("^43[0-8]", icd9cm_3))]
+sk_2a <- sk_1a[(grepl("^43[0-8]", icd9cm_1)|grepl("^43[0-8]", icd9cm_2)|grepl("^43[0-8]", icd9cm_3)), ]
+sk_2b <- sk_1b[(grepl("^43[0-8]", icd9cm_1)|grepl("^43[0-8]", icd9cm_2)|grepl("^43[0-8]", icd9cm_3)), ]
 
 # 申報類別為西醫急診
-sk_3a <- sk_2a[case_type == "02"]
-sk_3b <- sk_2b[case_type == "02"]
+sk_3a <- sk_2a[case_type == "02", ]
+sk_3b <- sk_2b[case_type == "02", ]
 
 # 歸人
 sk_4a <- unique(sk_3a[, .(id)])
